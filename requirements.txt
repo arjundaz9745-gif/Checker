@@ -7,11 +7,5 @@ configparser
 concurrent-log-handler
 pysocks
 colorama
-concurrent-log-handler
-configparser
-discord.py
-pysocks
-python-dotenv
-readchar
-requests
-urllib3
+flask
+PySocks
