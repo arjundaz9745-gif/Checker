@@ -1,0 +1,220 @@
+================================================================================
+                    VAULTCORE DISCORD BOT - COMMAND LIST
+================================================================================
+
+PREFIX: /  (Slash Commands)
+BOT: VaultCore Minecraft Account Checker
+================================================================================
+
+
+--------------------------------------------------------------------------------
+COMMAND 1: /check
+--------------------------------------------------------------------------------
+DESCRIPTION:
+    Start a new Minecraft account checker session.
+    The bot will ask you to upload your combos file and (optionally) a proxies
+    file, then begin checking accounts using the specified thread count and
+    proxy type.
+
+USAGE:
+    /check <threads> <proxy_type> [webhook_url]
+
+PARAMETERS:
+    threads       (Required)  Number of concurrent threads. Range: 1 - 50.
+                              Recommended: 5 - 10 for best results.
+
+    proxy_type    (Required)  Type of proxy to use. Accepted values:
+                                1  or  http     -> HTTP / HTTPS proxies
+                                2  or  socks4   -> SOCKS4 proxies
+                                3  or  socks5   -> SOCKS5 proxies
+                                4  or  none     -> No proxies (proxyless)
+                                5  or  auto     -> Auto-scrape free proxies
+
+    webhook_url   (Optional)  Discord webhook URL to send hit results to.
+                              Leave blank to use the webhook from config.ini.
+
+FLOW:
+    1. Run the command with your chosen threads and proxy type.
+    2. Bot asks you to upload your COMBOS file (.txt, email:password per line).
+    3. If proxy type is 1, 2, or 3, bot asks you to upload a PROXIES file
+       (or type "skip" to continue without proxies).
+    4. Checker starts. Status updates are sent every 10 seconds.
+    5. Type /stop to end the session early, or wait for completion.
+
+EXAMPLES:
+    /check threads:10 proxy_type:1
+    /check threads:25 proxy_type:socks5 webhook_url:https://discord.com/api/webhooks/xxx/yyy
+    /check threads:5  proxy_type:none
+    /check threads:20 proxy_type:auto
+
+NOTES:
+    - Only ONE active session per user is allowed at a time.
+    - You must stop your current session before starting a new one.
+    - Combos file upload timeout: 60 seconds.
+    - Proxies file upload timeout: 30 seconds.
+    - File must be a .txt file.
+
+
+--------------------------------------------------------------------------------
+COMMAND 2: /stop
+--------------------------------------------------------------------------------
+DESCRIPTION:
+    Stop one or all of your active checker sessions.
+    A final summary embed is sent after stopping.
+
+USAGE:
+    /stop [session_id]
+
+PARAMETERS:
+    session_id    (Optional)  The ID of the session you want to stop.
+                              If omitted, ALL of your active sessions
+                              will be stopped.
+
+EXAMPLES:
+    /stop                          -> Stops ALL of your active sessions
+    /stop session_id:1234567890    -> Stops a specific session
+
+NOTES:
+    - You can ONLY stop YOUR OWN sessions.
+    - Attempting to stop another user's session will be rejected.
+    - If the session ID is not found, you will receive an error message.
+
+
+--------------------------------------------------------------------------------
+COMMAND 3: /status
+--------------------------------------------------------------------------------
+DESCRIPTION:
+    Check the current status of a running session.
+    Shows progress, hits, and other statistics.
+
+USAGE:
+    /status [session_id]
+
+PARAMETERS:
+    session_id    (Optional)  The ID of the session to view.
+                              If omitted, shows a summary of ALL your
+                              active sessions.
+
+STATUS INCLUDES:
+    - Progress (checked / total + percentage)
+    - Hits
+    - Bad
+    - 2FA
+    - SFA (Single Factor Auth)
+    - MFA (Multi Factor Auth)
+    - Valid Mail
+    - XGP  (Xbox Game Pass)
+    - XGPU (Xbox Game Pass Ultimate)
+    - Other
+    - Unbanned / Banned counts
+    - Retries
+    - Errors
+    - Elapsed time
+
+EXAMPLES:
+    /status                          -> Shows all your active sessions
+    /status session_id:1234567890    -> Shows detailed status for one session
+
+NOTES:
+    - You can ONLY view YOUR OWN sessions.
+    - If you have no active sessions, you will be told so.
+
+
+--------------------------------------------------------------------------------
+COMMAND 4: /list
+--------------------------------------------------------------------------------
+DESCRIPTION:
+    List ALL active checker sessions across all users.
+    Useful for administrators to see who is running what.
+
+USAGE:
+    /list
+
+PARAMETERS:
+    None
+
+SHOWS:
+    - Username
+    - Session ID (first 8 characters)
+    - Progress
+    - Hits
+    - Threads used
+
+EXAMPLES:
+    /list
+
+NOTES:
+    - Shows sessions from ALL users, not just your own.
+    - If there are no active sessions, you will be told so.
+
+
+================================================================================
+                            QUICK REFERENCE
+================================================================================
+
+    /check 10 1              ->  10 threads, HTTP proxies
+    /check 20 2              ->  20 threads, SOCKS4 proxies
+    /check 30 3              ->  30 threads, SOCKS5 proxies
+    /check 5  4              ->   5 threads, no proxies
+    /check 15 5              ->  15 threads, auto-scrape proxies
+
+    /status                  ->  Your active sessions
+    /status 1234567890       ->  Specific session details
+    /list                    ->  All active sessions (everyone)
+    /stop                    ->  Stop all your sessions
+    /stop 1234567890         ->  Stop a specific session
+
+
+================================================================================
+                          IMPORTANT NOTES
+================================================================================
+
+ 1. ONLY ONE ACTIVE SESSION PER USER is allowed at a time.
+    You must stop your current session before starting a new one.
+
+ 2. THREAD LIMIT: 1 - 50. Recommended: 5 - 10 for best results.
+
+ 3. FILE UPLOAD TIMEOUTS:
+       - Combos file : 60 seconds
+       - Proxies file: 30 seconds
+
+ 4. COMMANDS ARE USER-ISOLATED:
+       You can only manage and view YOUR OWN sessions.
+       /list is the only exception (shows all sessions).
+
+ 5. PROXY FILE IS OPTIONAL:
+       Type "skip" when prompted if you do not have a proxies file.
+       (Only applies to proxy types 1, 2, and 3.)
+
+ 6. COMBOS FILE FORMAT:
+       Plain .txt file, one combo per line, formatted as:
+           email:password
+           email:password
+           email:password
+
+ 7. PROXIES FILE FORMAT:
+       Plain .txt file, one proxy per line, formatted as:
+           ip:port
+           user:pass@ip:port
+           ip:port
+           user:pass@ip:port
+
+ 8. IF COMMANDS DO NOT SHOW UP IN DISCORD:
+       - Wait up to 1 HOUR for global slash command sync.
+       - Or restart the bot - it syncs on startup.
+       - Ensure the bot was invited with the "applications.commands" scope.
+
+
+================================================================================
+                          REQUIRED ENVIRONMENT
+================================================================================
+
+  BOT_TOKEN            (REQUIRED)   Discord Bot Token.
+  WEBHOOK              (Optional)   Default hit webhook URL.
+  BANNEDWEBHOOK        (Optional)   Webhook for banned accounts.
+  UNBANNEDWEBHOOK      (Optional)   Webhook for unbanned accounts.
+
+
+================================================================================
+                              END OF FILE
+================================================================================
